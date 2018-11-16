@@ -1,24 +1,18 @@
 import queue
 from multiprocessing.managers import BaseManager
+from collections import deque
 
 
 def main():
-    task_queue = queue.Queue()
+    task_queue = deque(list(range(10)))
     result_queue = queue.Queue()
+
+    manager = BaseManager(address=('', 5000), authkey=b'test_key')
 
     BaseManager.register('get_task_queue', callable=lambda: task_queue)
     BaseManager.register('get_result_queue', callable=lambda: result_queue)
 
-    manager = BaseManager(address=('', 5000), authkey=b'test_key')
-
     manager.start()
-
-    print('try to get task queue')
-    task = manager.get_task_queue()
-    for i in range(10):
-        print('Put taks %d' %i)
-        task.put(i)
-
     print('try to get result queue')
     result = manager.get_result_queue()
     print('Try to get results')
