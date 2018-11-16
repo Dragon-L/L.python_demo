@@ -32,6 +32,7 @@ def pool_demo(parallel_num, total_num):
     pool = Pool(parallel_num)
     for i in range(total_num):
         pool.apply_async(task, args=('task_'+str(i),))
+    # pool.map(task, ['task_1', 'task_2', 'task_3', 'task_4', 'task_6'])
     pool.close()
     pool.join()
     print('All process is closed!')
