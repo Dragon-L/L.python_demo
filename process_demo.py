@@ -1,5 +1,6 @@
 import os, time
 from multiprocessing import Process, Pool
+from concurrent.futures import ProcessPoolExecutor
 
 
 def task(name):
@@ -38,8 +39,14 @@ def pool_demo(parallel_num, total_num):
     print('All process is closed!')
 
 
+def process_executor_demo():
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        executor.map(task, ['1', '2', '3', '4', '5', '6'])
+
+
 
 
 # fork_demo()
 # multiprocessing_demo()
-pool_demo(3, 5)
+# pool_demo(3, 5)
+process_executor_demo()
