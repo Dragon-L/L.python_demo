@@ -1,12 +1,12 @@
 import os, time
-from multiprocessing import Process, Pool
-from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Process, Pool, cpu_count
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 
 def task(name):
     print('Run child process %s (%s)' % (name, os.getpid()))
     start = time.time()
-    time.sleep(1)
+    time.sleep(5)
     end = time.time()
     print('Task %s runs %f seconds' % (name, end - start))
 
@@ -40,9 +40,13 @@ def pool_demo(parallel_num, total_num):
 
 
 def process_executor_demo():
-    with ProcessPoolExecutor(max_workers=4) as executor:
-        executor.map(task, ['1', '2', '3', '4', '5', '6'])
+    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+        executor.map(task, list(range(100)))
 
+
+def thread_executr_demo():
+    with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+        executor.map(task, list(range(100)))
 
 
 
@@ -50,3 +54,4 @@ def process_executor_demo():
 # multiprocessing_demo()
 # pool_demo(3, 5)
 process_executor_demo()
+# thread_executr_demo()
