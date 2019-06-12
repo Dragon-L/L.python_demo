@@ -2,6 +2,16 @@ import re
 from ast import literal_eval
 import numpy as np
 import pandas as pd
+from scipy import sparse as sp_sparse
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import average_precision_score
+from sklearn.metrics import recall_score
+
 
 REPLACE_BY_SPACE_RE = re.compile('[/(){}\[\]\|@,;]')
 BAD_SYMBOLS_RE = re.compile('[^0-9a-z #+_]')
@@ -41,5 +51,59 @@ def my_bag_of_words(text, words_to_index, dict_size):
     """
     result_vector = np.zeros(dict_size)
     for word in text.split(' '):
-        result_vector[words_to_index[word]] += 1
+        if word in words_to_index:
+            result_vector[words_to_index[word]] += 1
     return result_vector
+
+
+def pure_bag_of_words(words_counts, X_train, X_val, X_test):
+    DICT_SIZE = 5000
+    most_common_words = sorted(words_counts.items(), key=lambda x: x[1], reverse=True)[:DICT_SIZE]
+    WORDS_TO_INDEX = {word: index for index, (word, frequency) in enumerate(most_common_words)}
+    # INDEX_TO_WORDS =  ####### YOUR CODE HERE #######
+    ALL_WORDS = WORDS_TO_INDEX.keys()
+    X_train_mybag = sp_sparse.vstack(
+        [sp_sparse.csr_matrix(my_bag_of_words(text, WORDS_TO_INDEX, DICT_SIZE)) for text in X_train])
+    X_val_mybag = sp_sparse.vstack(
+        [sp_sparse.csr_matrix(my_bag_of_words(text, WORDS_TO_INDEX, DICT_SIZE)) for text in X_val])
+    X_test_mybag = sp_sparse.vstack(
+        [sp_sparse.csr_matrix(my_bag_of_words(text, WORDS_TO_INDEX, DICT_SIZE)) for text in X_test])
+    print('X_train shape ', X_train_mybag.shape)
+    print('X_val shape ', X_val_mybag.shape)
+    print('X_test shape ', X_test_mybag.shape)
+    return X_train_mybag, X_val_mybag, X_test_mybag
+
+
+def tfidf_features(X_train, X_val, X_test):
+    """
+        X_train, X_val, X_test — samples
+        return TF-IDF vectorized representation of each sample and vocabulary
+    """
+    # Create TF-IDF vectorizer with a proper parameters choice
+    # Fit the vectorizer on the train set
+    # Transform the train, test, and val sets and return the result
+
+    tfidf_vectorizer = TfidfVectorizer('content', max_df=0.9, min_df=5, token_pattern='(\S+)')
+
+    tfidf_vectorizer.fit(X_train)
+    X_train = tfidf_vectorizer.transform(X_train)
+    X_val = tfidf_vectorizer.transform(X_val)
+    X_test = tfidf_vectorizer.transform(X_test)
+
+    return X_train, X_val, X_test, tfidf_vectorizer.vocabulary_
+
+
+def train_classifier(X_train, y_train):
+    """
+      X_train, y_train — training data
+
+      return: trained classifier
+    """
+
+    # Create and fit LogisticRegression wraped into OneVsRestClassifier.
+    estimator = LogisticRegression()
+    classifier = OneVsRestClassifier(estimator)
+    classifier.fit(X_train, y_train)
+    return classifier
+
+
