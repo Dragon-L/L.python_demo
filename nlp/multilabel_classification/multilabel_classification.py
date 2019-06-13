@@ -1,42 +1,33 @@
-import pandas as pd
+from sklearn.preprocessing import MultiLabelBinarizer
+
 from nlp.multilabel_classification.utils import *
 
 
-def main():
-    train = read_data('data/train.tsv')
-    validation = read_data('data/validation.tsv')
-    test = pd.read_csv('data/test.tsv', sep='\t')
-    # print(train.head())
-    X_train, Y_train = train['title'].values, train['tags'].values
-    X_val, Y_val = validation['title'].values, validation['tags'].values
-    X_test = test['title'].values
-    X_train = [text_prepare(text) for text in X_train]
-    X_val = [text_prepare(text) for text in X_val]
-    X_test = [text_prepare(text) for text in X_test]
-    # Dictionary of all tags from train corpus with their counts.
-    tags_counts = {}
-    # Dictionary of all words from train corpus with their counts.
-    words_counts = {}
-    for tag_list in Y_train:
-        for tag in tag_list:
-            tags_counts[tag] = tags_counts.get(tag, 0) + 1
-    for sentence in X_train:
-        words = sentence.split(' ')
-        for word in words:
-            words_counts[word] = words_counts.get(word, 0) + 1
-    X_train_mybag, X_val_mybag, X_test_mybag = pure_bag_of_words(words_counts, X_train, X_val, X_test)
+def main(method='TFIDF'):
+    X_test, X_train, X_val, Y_train, Y_val = load_dataset()
+    X_test, X_train, X_val = text_normalization(X_test, X_train, X_val)
+    tags_counts, words_counts = count_tags_and_words(X_train, Y_train)
 
-    X_train_tfidf, X_val_tfidf, X_test_tfidf, tfidf_vocab = tfidf_features(X_train, X_val, X_test)
+    mlb = MultiLabelBinarizer(classes=sorted(tags_counts.keys()))
+    Y_train = mlb.fit_transform(Y_train)
+    Y_val = mlb.fit_transform(Y_val)
 
-    classifier_mybag = train_classifier(X_train_mybag, Y_train)
-    y_val_mybag = classifier_mybag.predict(X_val_mybag)
+    if method=='BOW':
+        x_train, x_val, x_test = transform_to_feature_with_BOW(words_counts, X_train, X_val, X_test)
+    elif method=='TFIDF':
+        x_train, x_val, x_test, tfidf_vocab = transform_to_feature_with_tfidn(X_train, X_val, X_test)
+    else:
+        print('Method not supported')
+        return
 
-    classifier_tfidf = train_classifier(X_train_tfidf, Y_train)
-    y_val_tfidf = classifier_tfidf.predict(X_val_tfidf)
+    classifier = train_classifier(x_train, Y_train)
+
+    y_val = classifier.predict(x_val)
+    print_evaluation_scores(y_val, Y_val)
+
+    test_prediction = classifier.predict(x_test)
+    print(test_prediction)
 
 
-main()
-
-
-
-
+if __name__ == "__main__":
+    main()
