@@ -1,19 +1,11 @@
-from nlp.name_entity_recognition.utils import *
+from model import Model
+from utils import *
 
-special_tokens = ['<UNK>', '<PAD>']
-special_tags = ['O']
-
-def words2idxs(tokens_list):
-    return [token2idx[word] for word in tokens_list]
-
-def tags2idxs(tags_list):
-    return [tag2idx[tag] for tag in tags_list]
-
-def idxs2words(idxs):
-    return [idx2token[idx] for idx in idxs]
-
-def idxs2tags(idxs):
-    return [idx2tag[idx] for idx in idxs]
+SPECIAL_TOKENS = ['<UNK>', '<PAD>']
+SPECIAL_TAGS = ['O']
+BATCH_SIZE = 32
+IS_SHUFFLE = True
+EPOCH = 4
 
 
 def main():
@@ -21,10 +13,20 @@ def main():
     validation_tokens, validation_tags = read_data('data/validation.txt')
     test_tokens, test_tags = read_data('data/test.txt')
 
-
     # Create dictionaries
-    token2idx, idx2token = build_dict(train_tokens + validation_tokens, special_tokens)
-    tag2idx, idx2tag = build_dict(train_tags, special_tags)
+    token2idx, idx2token = build_dict(train_tokens + validation_tokens, SPECIAL_TOKENS)
+    tag2idx, idx2tag = build_dict(train_tags, SPECIAL_TAGS)
+
+    train_x, train_y = convert_to_index(token2idx, train_tokens), convert_to_index(tag2idx, train_tags)
+    # val_x, val_y = convert_to_index(token2idx, validation_tokens), convert_to_index(tag2idx, validation_tags)
+    # test_x, test_y = convert_to_index(token2idx, test_tokens), convert_to_index(tag2idx, test_tags)
+
+    tokens_batch, tags_batch = create_batch(train_x, train_y, BATCH_SIZE, IS_SHUFFLE)
+
+    model = Model(100, len(idx2tag))
+    model.build_layers()
+    model.train(tokens_batch, tags_batch, EPOCH)
+
 
 
 

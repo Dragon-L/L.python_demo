@@ -1,4 +1,7 @@
-from collections import defaultdict
+from math import ceil
+from random import shuffle
+
+import numpy as np
 
 
 def read_data(file_path):
@@ -29,11 +32,6 @@ def read_data(file_path):
 
 
 def build_dict(tokens_or_tags, special_tokens):
-    """
-        tokens_or_tags: a list of lists of tokens or tags
-        special_tokens: some special tokens
-    """
-    tok2idx = defaultdict(lambda: 0)
     idx2tok = []
 
     special_tokens_set = set(special_tokens)
@@ -43,3 +41,26 @@ def build_dict(tokens_or_tags, special_tokens):
     idx2tok.extend(filtered_tokens)
     tok2idx = {token: index for index, token in enumerate(idx2tok)}
     return tok2idx, idx2tok
+
+
+def convert_to_index(dict, tokens_or_tags):
+    return [[dict[token] for token in tokens_list] for tokens_list in tokens_or_tags]
+
+
+def create_batch(tokens, tags, batch_size, is_shuffle):
+    n_samples = len(tokens)
+    tokens = np.array(tokens)
+    tags = np.array(tags)
+    indexs = np.arange(n_samples)
+    if is_shuffle:
+        shuffle(indexs)
+
+    num_of_batch = int(ceil(n_samples / batch_size))
+    for current_batch in range(num_of_batch - 1):
+        start = current_batch * batch_size
+        end = min((current_batch + 1) * batch_size, n_samples)
+        batch_indexs = indexs[start:end]
+        print(batch_indexs)
+        yield tokens[batch_indexs], tags[batch_indexs]
+    remain_indexs = indexs[end:]
+    yield tokens[remain_indexs], tags[remain_indexs]
