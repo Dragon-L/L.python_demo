@@ -1,4 +1,3 @@
-from model import Model
 from utils import *
 
 SPECIAL_TOKENS = ['<UNK>', '<PAD>']
@@ -21,11 +20,13 @@ def main():
     # val_x, val_y = convert_to_index(token2idx, validation_tokens), convert_to_index(tag2idx, validation_tags)
     # test_x, test_y = convert_to_index(token2idx, test_tokens), convert_to_index(tag2idx, test_tags)
 
-    tokens_batch, tags_batch = create_batch(train_x, train_y, BATCH_SIZE, IS_SHUFFLE)
-
-    model = Model(100, len(idx2tag))
-    model.build_layers()
-    model.train(tokens_batch, tags_batch, EPOCH)
+    # tokens_batch, tags_batch = create_batch(train_x, train_y, BATCH_SIZE, IS_SHUFFLE)
+    for tokens_batch, tags_batch, length in create_batch(train_x, train_y, BATCH_SIZE, IS_SHUFFLE,
+                                                         token2idx[SPECIAL_TOKENS[1]], tag2idx[SPECIAL_TAGS[0]]):
+        pass
+    # model = Model(100, len(idx2tag))
+    # model.build_layers()
+    # model.train(tokens_batch, tags_batch, EPOCH)
 
 
 
