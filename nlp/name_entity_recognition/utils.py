@@ -46,7 +46,7 @@ def convert_to_index(dict, tokens_or_tags):
     return [[dict[token] for token in tokens_list] for tokens_list in tokens_or_tags]
 
 
-def create_batch(tokens, tags, batch_size, is_shuffle, pad_index, other_index):
+def create_batch(tokens, tags, batch_size, is_shuffle, pad_token, pad_tag):
     n_samples = len(tokens)
     tokens = np.array(tokens)
     tags = np.array(tags)
@@ -61,12 +61,13 @@ def create_batch(tokens, tags, batch_size, is_shuffle, pad_index, other_index):
         end = min((current_batch + 1) * batch_size, n_samples)
         batch_indexs = indexs[start:end]
         tokens_batch, tags_batch = tokens[batch_indexs], tags[batch_indexs]
+        lens = [len(tokens) for tokens in tokens_batch]
         max_length = len(max(tokens_batch, key=len))
 
-        tokens_batch = pad_array(max_length, pad_index, tokens_batch)
-        tags_batch = pad_array(max_length, other_index, tags_batch)
+        tokens_batch = pad_array(max_length, pad_token, tokens_batch)
+        tags_batch = pad_array(max_length, pad_tag, tags_batch)
 
-        yield tokens_batch, tags_batch, max_length
+        yield tokens_batch, tags_batch, lens
 
 
 def pad_array(max_length, pad_value, array):
