@@ -62,12 +62,23 @@ def create_batch(tokens, tags, batch_size, is_shuffle, pad_token, pad_tag):
         batch_indexs = indexs[start:end]
         tokens_batch, tags_batch = tokens[batch_indexs], tags[batch_indexs]
         lens = [len(tokens) for tokens in tokens_batch]
-        max_length = len(max(tokens_batch, key=len))
+        max_length = max(lens)
 
+        # TODO: if model accept the lens of every sequence, why need to do pad
         tokens_batch = pad_array(max_length, pad_token, tokens_batch)
         tags_batch = pad_array(max_length, pad_tag, tags_batch)
 
         yield tokens_batch, tags_batch, lens
+
+
+def create_single_batch(tokens, pad_token):
+    tokens = np.array(tokens)
+
+    lens = [len(tokens) for tokens in tokens]
+    max_len = max(lens)
+
+    tokens_batch = pad_array(max_len, pad_token, tokens)
+    return tokens_batch, lens
 
 
 def pad_array(max_length, pad_value, array):

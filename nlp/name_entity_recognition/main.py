@@ -23,11 +23,13 @@ def main():
     pad_tag_index = tag2idx[SPECIAL_TAGS[0]]
 
     train_x, train_y = convert_to_index(token2idx, train_tokens), convert_to_index(tag2idx, train_tags)
-    # val_x, val_y = convert_to_index(token2idx, validation_tokens), convert_to_index(tag2idx, validation_tags)
+    val_x = convert_to_index(token2idx, validation_tokens)
     # test_x, test_y = convert_to_index(token2idx, test_tokens), convert_to_index(tag2idx, test_tags)
 
-    model = Model(EMBEDDING_DIM, len(idx2tag), len(idx2token), N_HIDDEN_RNN, pad_tag_index, pad_tag_index, 0.5, 0.001)
-    model.train(train_x, train_y, BATCH_SIZE, IS_SHUFFLE, EPOCH)
+    model = Model(EMBEDDING_DIM, len(idx2tag), len(idx2token), N_HIDDEN_RNN, pad_tag_index, pad_tag_index, idx2tag, 0.5,
+                  0.001)
+    model.train(train_x, train_y, BATCH_SIZE, IS_SHUFFLE, EPOCH, val_x,
+                [tag for sequence in validation_tags for tag in sequence])
 
 
 
