@@ -8,8 +8,9 @@ from utils import create_batch, create_single_batch
 class Model(object):
     def __init__(self, embedding_length, num_of_tags, vocabulary_size, n_hidden_rnn, pad_token_index, pad_tag_index,
                  idx2tag,
-                 keep_drop=None,
-                 learning_rate=None):
+                 keep_drop,
+                 learning_rate,
+                 learning_rate_decay):
         self.embedding_dim = embedding_length
         self.num_of_tags = num_of_tags
         self.vocabulary_size = vocabulary_size
@@ -19,6 +20,7 @@ class Model(object):
         self.idx2tag = idx2tag
         self.keep_drop = keep_drop
         self.learning_rate = learning_rate
+        self.learning_rate_decay = learning_rate_decay
         tf.logging.set_verbosity(tf.logging.INFO)
         self._declare_placeholder()
         self._build_layers()
@@ -90,15 +92,19 @@ class Model(object):
         }
         return session.run(self.predictions, feed_dict=feed_dit)
 
-    def train(self, x, y, batch_size, is_shuffle, epoch, x_val, y_val):
+    def train(self, x, y, batch_size, is_shuffle, epoch, x_val, y_val, x_test, y_test):
         with tf.Session() as sess:
             # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
             init_op = tf.initializers.global_variables()
             sess.run(init_op)
 
+            y_tags = [self.idx2tag[y_index] for y_sequence in y for y_index in y_sequence]
+            print('-' * 5 + 'Validation set quality' + '-' * 5)
+            self._eval(sess, x, y_tags)
+            print('-' * 5 + 'Train set quality' + '-' * 5)
             self._eval(sess, x_val, y_val)
-
             for i in range(epoch):
+                print('start to epoch: %i' % (i + 1))
                 for x_batch, y_batch, lens in create_batch(x, y, batch_size, is_shuffle, self.pad_token_index,
                                                            self.pad_tag_index):
                     feed_dict = {
@@ -109,12 +115,20 @@ class Model(object):
                         self.learning_rate_ph: self.learning_rate
                     }
                     sess.run(self.train_op, feed_dict=feed_dict)
+                self.learning_rate = self.learning_rate / self.learning_rate_decay
+                print('-' * 5 + 'Validation set quality' + '-' * 5)
+                self._eval(sess, x, y_tags)
+                print('-' * 5 + 'Train set quality' + '-' * 5)
+                self._eval(sess, x_val, y_val)
 
-    def _eval(self, sess, x_val, y_val):
-        x_val, lens = create_single_batch(x_val, self.pad_token_index)
-        predictions = self._predict_for_batch(x_val, lens, sess)
+            print('-' * 5 + 'Test set quality' + '-' * 5)
+            self._eval(sess, x_test, y_test)
+
+    def _eval(self, sess, x, y):
+        x, lens = create_single_batch(x, self.pad_token_index)
+        predictions = self._predict_for_batch(x, lens, sess)
         y_pred = []
-        for token, pred in zip(x_val, predictions):
+        for token, pred in zip(x, predictions):
             pad_indexs = np.where(token == self.pad_token_index)[0]
             if pad_indexs.size != 0:
                 first_pad_index = pad_indexs[0]
@@ -123,5 +137,6 @@ class Model(object):
                 filtered_pred_indexs = pred
             filtered_pred_tag = [self.idx2tag[pred_index] for pred_index in filtered_pred_indexs]
             y_pred.extend(filtered_pred_tag)
-        assert len(y_pred) == len(y_val)
-        precision_recall_f1(y_val, y_pred, short_report=True)
+
+        assert len(y_pred) == len(y)
+        precision_recall_f1(y, y_pred, short_report=True)
